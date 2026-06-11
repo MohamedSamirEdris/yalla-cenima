@@ -1,10 +1,20 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import confetti from 'canvas-confetti'
 import AnimatedBackground from './components/AnimatedBackground'
 import FloatingElements from './components/FloatingElements'
 import NoButton from './components/NoButton'
 import SuccessScreen from './components/SuccessScreen'
+import {
+  TITLES,
+  SUBTITLES,
+  YES_LABELS,
+  NO_LABELS,
+  SUCCESS_MESSAGES,
+  BADGE,
+  FOOTER_HINT,
+  pickRandom,
+} from './copy'
 
 function fireConfetti() {
   const duration = 3000
@@ -50,10 +60,21 @@ function fireConfetti() {
 }
 
 export default function App() {
-  const noAnchorRef = useRef(null)
   const [confirmed, setConfirmed] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+
+  const copy = useMemo(
+    () => ({
+      title: pickRandom(TITLES),
+      subtitle: pickRandom(SUBTITLES),
+      yesLabel: pickRandom(YES_LABELS),
+      noLabel: pickRandom(NO_LABELS),
+    }),
+    [],
+  )
 
   const handleYes = useCallback(() => {
+    setSuccessMessage(pickRandom(SUCCESS_MESSAGES))
     setConfirmed(true)
     fireConfetti()
   }, [])
@@ -83,9 +104,9 @@ export default function App() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 300, delay: 0.2 }}
-                className="mb-6 rounded-full border border-purple-400/30 bg-purple-500/10 px-5 py-2 text-sm font-semibold tracking-widest text-purple-300 uppercase backdrop-blur-sm"
+                className="mb-6 rounded-full border border-purple-400/30 bg-purple-500/10 px-5 py-2 text-sm font-bold text-purple-300 backdrop-blur-sm"
               >
-                Cinema Tonight
+                {BADGE}
               </motion.div>
 
               <motion.div
@@ -99,7 +120,7 @@ export default function App() {
                   animate={{ scale: [1, 1.02, 1] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                  Are we going to the cinema tonight? 🍿🎬
+                  {copy.title}
                 </motion.h1>
 
                 <motion.p
@@ -108,14 +129,14 @@ export default function App() {
                   transition={{ delay: 0.5 }}
                   className="mb-10 text-center text-lg text-purple-200/70 sm:text-xl"
                 >
-                  Choose wisely 😏
+                  {copy.subtitle}
                 </motion.p>
 
-                <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center sm:gap-6">
+                <div className="flex flex-row flex-wrap items-center justify-center gap-4 sm:gap-6">
                   <motion.button
                     type="button"
                     onClick={handleYes}
-                    className="group relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-violet-600 px-10 py-4 text-xl font-black text-white shadow-lg shadow-purple-500/30 sm:w-auto sm:px-12 sm:py-5 sm:text-2xl"
+                    className="group relative w-auto shrink-0 overflow-hidden rounded-2xl bg-gradient-to-r from-pink-500 via-purple-500 to-violet-600 px-10 py-4 text-xl font-black text-white shadow-lg shadow-purple-500/30 sm:px-12 sm:py-5 sm:text-2xl"
                     whileHover={{
                       scale: 1.08,
                       boxShadow: '0 0 40px rgba(192, 132, 252, 0.6)',
@@ -138,21 +159,13 @@ export default function App() {
                       transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                     />
                     <span className="relative flex items-center justify-center gap-2">
-                      YES ✅
+                      {copy.yesLabel}
                     </span>
                   </motion.button>
 
-                  <div
-                    ref={noAnchorRef}
-                    className="flex w-full items-center justify-center rounded-2xl border border-dashed border-red-400/25 bg-red-500/5 px-8 py-3.5 sm:w-auto sm:px-10 sm:py-4"
-                    aria-hidden
-                  >
-                    <span className="text-sm font-semibold text-red-300/40">NO is somewhere... 👀</span>
-                  </div>
+                  <NoButton disabled={confirmed} label={copy.noLabel} />
                 </div>
               </motion.div>
-
-              <NoButton disabled={confirmed} anchorRef={noAnchorRef} />
 
               <motion.p
                 initial={{ opacity: 0 }}
@@ -160,7 +173,7 @@ export default function App() {
                 transition={{ delay: 1 }}
                 className="mt-6 text-center text-sm text-white/30"
               >
-                Tap YES before NO runs away 🏃‍♂️
+                {FOOTER_HINT}
               </motion.p>
             </motion.div>
           ) : (
@@ -170,7 +183,7 @@ export default function App() {
               animate={{ opacity: 1 }}
               className="w-full rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl sm:p-12"
             >
-              <SuccessScreen />
+              <SuccessScreen message={successMessage} />
             </motion.div>
           )}
         </AnimatePresence>

@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 
 const celebrationEmojis = ['🎉', '🍿', '🎬', '⭐', '🎊', '✨', '🥤', '🎟️']
 
-export default function SuccessScreen() {
+export default function SuccessScreen({ message }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.5 }}
@@ -51,19 +51,10 @@ export default function SuccessScreen() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, type: 'spring' }}
-        className="shimmer-text text-3xl font-black leading-tight sm:text-5xl"
+        className="shimmer-text text-3xl leading-tight font-black sm:text-5xl"
       >
-        Yesss! Movie night confirmed 🎉🍿
+        {message}
       </motion.h2>
-
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="max-w-sm text-lg text-purple-200/80 sm:text-xl"
-      >
-        See you at the cinema! Grab your snacks and get ready for an epic night 🎭✨
-      </motion.p>
 
       <motion.div
         initial={{ opacity: 0, scale: 0 }}

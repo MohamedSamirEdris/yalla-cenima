@@ -1,19 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const FUNNY_MESSAGES = [
-  'Nice try 😏',
-  "You can't escape movie night 😂",
-  'Wrong button!',
-  'Try again 🤭',
-  'Nope! Cinema awaits 🎬',
-  'The popcorn is calling 🍿',
-  'Not today, friend 😎',
-  'YES is that way 👉',
-  'Resistance is futile 🎭',
-  'Movie magic wins ✨',
-]
+import { NO_FLEE_MESSAGES } from '../copy'
 
 const FLEE_RADIUS = 100
 
@@ -65,26 +53,17 @@ function fleeFromPointer(pointerX, pointerY, buttonRef, currentPos) {
   }
 }
 
-export default function NoButton({ disabled, anchorRef }) {
+const buttonClassName =
+  'cursor-not-allowed select-none rounded-2xl border-2 border-red-400/60 bg-gradient-to-r from-red-600/40 to-orange-600/40 px-8 py-3.5 text-lg font-bold text-red-100 shadow-xl shadow-red-500/20 backdrop-blur-sm sm:px-10 sm:py-4 sm:text-xl'
+
+export default function NoButton({ disabled, label }) {
   const buttonRef = useRef(null)
+  const [isFleeing, setIsFleeing] = useState(false)
   const [position, setPosition] = useState(null)
   const [message, setMessage] = useState('')
   const [animKey, setAnimKey] = useState(0)
   const messageTimeout = useRef(null)
   const lastFlee = useRef(0)
-
-  useLayoutEffect(() => {
-    if (!anchorRef?.current) return
-
-    const placeInitial = () => {
-      const anchor = anchorRef.current.getBoundingClientRect()
-      setPosition({ x: anchor.left, y: anchor.top })
-    }
-
-    placeInitial()
-    window.addEventListener('resize', placeInitial)
-    return () => window.removeEventListener('resize', placeInitial)
-  }, [anchorRef])
 
   const flee = useCallback(
     (clientX, clientY) => {
@@ -96,7 +75,7 @@ export default function NoButton({ disabled, anchorRef }) {
 
       setPosition((prev) => fleeFromPointer(clientX, clientY, buttonRef, prev))
       setAnimKey((k) => k + 1)
-      setMessage(FUNNY_MESSAGES[Math.floor(Math.random() * FUNNY_MESSAGES.length)])
+      setMessage(NO_FLEE_MESSAGES[Math.floor(Math.random() * NO_FLEE_MESSAGES.length)])
 
       if (messageTimeout.current) clearTimeout(messageTimeout.current)
       messageTimeout.current = setTimeout(() => setMessage(''), 2000)
@@ -108,13 +87,20 @@ export default function NoButton({ disabled, anchorRef }) {
     (e) => {
       e.preventDefault()
       e.stopPropagation()
+
+      if (!isFleeing && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect()
+        setPosition({ x: rect.left, y: rect.top })
+        setIsFleeing(true)
+      }
+
       flee(e.clientX, e.clientY)
     },
-    [flee],
+    [flee, isFleeing],
   )
 
   useEffect(() => {
-    if (disabled || !position) return
+    if (disabled || !isFleeing) return
 
     const onPointerMove = (e) => {
       const btn = buttonRef.current
@@ -132,33 +118,65 @@ export default function NoButton({ disabled, anchorRef }) {
 
     window.addEventListener('pointermove', onPointerMove, { passive: false })
     return () => window.removeEventListener('pointermove', onPointerMove)
-  }, [disabled, position, flee])
+  }, [disabled, isFleeing, flee])
 
-  if (disabled || !position) return null
+  if (disabled) return null
 
-  return createPortal(
-    <>
-      <AnimatePresence>
-        {message && (
-          <motion.div
-            key={message + animKey}
-            initial={{ opacity: 0, y: 16, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="pointer-events-none fixed left-1/2 top-8 z-[60] -translate-x-1/2 rounded-2xl border border-pink-400/40 bg-gradient-to-r from-pink-500/30 to-purple-500/30 px-5 py-2.5 text-center text-sm font-bold text-pink-100 shadow-lg backdrop-blur-md sm:text-base"
-          >
-            {message}
-          </motion.div>
-        )}
-      </AnimatePresence>
+  const buttonContent = (
+    <motion.span
+      animate={{ opacity: [0.7, 1, 0.7] }}
+      transition={{ duration: 1.2, repeat: Infinity }}
+    >
+      {label}
+    </motion.span>
+  )
 
+  const messageToast = (
+    <AnimatePresence>
+      {message && (
+        <motion.div
+          key={message + animKey}
+          initial={{ opacity: 0, y: 16, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          className="pointer-events-none fixed left-1/2 top-8 z-[60] -translate-x-1/2 rounded-2xl border border-pink-400/40 bg-gradient-to-r from-pink-500/30 to-purple-500/30 px-5 py-2.5 text-center text-sm font-bold text-pink-100 shadow-lg backdrop-blur-md sm:text-base"
+        >
+          {message}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+
+  if (!isFleeing) {
+    return (
       <motion.button
         ref={buttonRef}
         type="button"
         tabIndex={-1}
-        aria-label="No button - good luck clicking it"
-        className="fixed z-50 cursor-not-allowed touch-none select-none rounded-2xl border-2 border-red-400/60 bg-gradient-to-r from-red-600/40 to-orange-600/40 px-8 py-3.5 text-lg font-bold text-red-100 shadow-xl shadow-red-500/20 backdrop-blur-sm sm:px-10 sm:py-4 sm:text-xl"
-        style={{ left: position.x, top: position.y }}
+        aria-label="زرار لأ - بالهنا والشفا"
+        className={`${buttonClassName} w-full shrink-0 sm:w-auto`}
+        onPointerEnter={handlePointer}
+        onPointerDown={handlePointer}
+        onClick={handlePointer}
+        onTouchStart={handlePointer}
+        whileTap={{ scale: 0.95 }}
+      >
+        {buttonContent}
+      </motion.button>
+    )
+  }
+
+  return createPortal(
+    <>
+      {messageToast}
+      <motion.button
+        ref={buttonRef}
+        key={animKey}
+        type="button"
+        tabIndex={-1}
+        aria-label="زرار لأ - بالهنا والشفا"
+        className={`${buttonClassName} fixed touch-none`}
+        style={{ left: position?.x ?? 0, top: position?.y ?? 0, zIndex: 50 }}
         onPointerEnter={handlePointer}
         onPointerDown={handlePointer}
         onClick={handlePointer}
@@ -168,14 +186,8 @@ export default function NoButton({ disabled, anchorRef }) {
           rotate: [0, -4, 4, 0],
         }}
         transition={{ duration: 0.35, type: 'spring', stiffness: 400, damping: 12 }}
-        key={animKey}
       >
-        <motion.span
-          animate={{ opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 1.2, repeat: Infinity }}
-        >
-          NO ❌
-        </motion.span>
+        {buttonContent}
       </motion.button>
     </>,
     document.body,
